@@ -1,11 +1,45 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "request-list",
+    "title": "Information we still need",
+    "for_each": "select distinct j.id,j.name from jobs j join requests q on q.job_id=j.id where q.status='open'",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      { "title": "Job", "sql": "select name as job,client,period_end,due_on,manager from v_jobs where id=$1" },
+      { "title": "Outstanding", "sql": "select item,requested_on,due_on from requests where job_id=$1 and status='open' order by due_on", "note": "Reply with the files attached, or upload them where your accountant has asked. Items already received are not listed." }
+    ]
+  },
+  {
+    "name": "document-register",
+    "title": "Client document register",
+    "for_each": "select id,name from clients where id in (select client_id from documents)",
+    "file": "name",
+    "sections": [
+      { "title": "Client", "sql": "select c.code,c.name,c.entity,c.country,p.name as partner from clients c left join staff p on p.id=c.partner_id where c.id=$1" },
+      { "title": "Documents held", "sql": "select year,category,title,kind,doc_date,retain_until,path from v_documents where client_id=$1 and status='final' order by year desc nulls last,category,title", "note": "An index of what the practice holds. The files live at the path shown." },
+      { "title": "Disposed of on schedule", "sql": "select d.title,x.retain_until,x.disposed_on,x.authorised_by from disposals x join documents d on d.id=x.document_id where d.client_id=$1 order by x.disposed_on" }
+    ]
+  },
+  {
+    "name": "job-file",
+    "title": "Job file summary for quality review",
+    "for_each": "select id,name from jobs where state in ('lodged','complete','signing')",
+    "file": "name",
+    "sections": [
+      { "title": "Job", "sql": "select name as job,client,job_type,service,state,period_end,lodged_on,manager,partner from v_jobs where id=$1" },
+      { "title": "Required documents", "sql": "select category,filed,final from v_checklist where job_id=$1 order by category" },
+      { "title": "Documents on file", "sql": "select category,title,status,doc_date,sha256 from v_documents where job_id=$1 and status<>'disposed' order by category,doc_date" },
+      { "title": "Signatures", "sql": "select title,signer,method,sent_on,signed_on from v_signatures where document_id in (select id from documents where job_id=$1)" }
+    ]
+  },
+  {
+    "name": "disposal-certificate",
+    "title": "Record of disposal",
+    "for_each": "select x.id,d.title as name from disposals x join documents d on d.id=x.document_id",
+    "file": "name",
+    "sections": [
+      { "title": "Document", "sql": "select c.name as client,d.title,cat.name as category,d.doc_date,d.path,d.sha256 from disposals x join documents d on d.id=x.document_id left join clients c on c.id=d.client_id left join categories cat on cat.id=d.category_id where x.id=$1" },
+      { "title": "Disposal", "sql": "select retain_until,disposed_on,authorised_by,method,reason from disposals where id=$1", "note": "Disposed of after the retention period shown, with no hold in place at the time." }
     ]
   }
 ]

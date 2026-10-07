@@ -40,11 +40,11 @@
 
 Practice Documents for Claude Code does the job you pay FYI Docs for, as a Postgres database and a set of agent commands. There is no web front end. You open the folder in [Claude Code](https://claude.com/claude-code) (or Codex, OpenCode, Cursor: see `AGENTS.md`) and ask for what you want in plain language. It runs the right query, and it can answer questions the FYI Docs dashboard cannot.
 
-<!-- TODO(author): the annual bill. One sentence: what a 10 to 50 person business typically pays FYI Docs per year, all in, with a source. -->
+FYI lists Intermediate at A$30, Pro at A$50 and Elite at A$70 per user per month, excluding GST, with a minimum of 5 users and migration, onboarding and consulting quoted separately ([pricing](https://fyi.app/pricing/), checked 7 October 2026). Ten users on Pro is A$6,000 a year; on Elite, A$8,400. That is not a five-figure bill, so the case for this repo is ownership, fit and answers, not a big saving.
 
 Want the same thing with a web front end, or built on a different stack? That is a customisation, and it is exactly what Enterprise DNA does: [book a call](https://enterprisedna.co/omni/book/?utm_source=github&utm_medium=readme&utm_campaign=fyi).
 
-<!-- TODO(author): two or three sentences on what this specific product covers and who it is for. -->
+It is built for an accounting practice of two to fifty people in Australia or New Zealand. It keeps the register of every client document (your files stay on your drive, SharePoint or OneDrive; this is the index with a fingerprint of each file), the jobs and the documents each job must hold, what you have asked clients for and how often you have chased, reviews and client signatures, engagement terms per service, identity checks, and retention with holds and disposal records. It drafts chasers and letters but never sends them, never lodges anything, and never deletes a file.
 
 ## Why no front end
 
@@ -63,7 +63,13 @@ npm install
 npm run demo
 ```
 
-Then open the folder in Claude Code and type a slash command. <!-- TODO(author): name the first command to try. -->
+Then open the folder in Claude Code and type a slash command. Start with `/attention`, then `/chase-list` and `/wip`. The fictional practice, Harbour Lane Accountants, has three overdue client requests, a tax return out for signature for ten days, financial statements stuck in partner review, two emails sitting unfiled in the inbox, a BAS job past due, a new trust client with no engagement letter and no identity check, engagement terms past review, a finished job with no signed approval on file, the same workpaper filed twice, and three old documents past retention (and a client on hold whose old records are correctly left alone). Dates move with the day you seed it.
+
+```bash
+npm test        # fresh temporary database, every command exercised
+npm run view    # views/week.html, jobs.html, records.html
+npm run docs    # client request lists, document registers, job file summaries, disposal records
+```
 
 ### Use it with your own Postgres or Supabase
 
@@ -71,15 +77,108 @@ Copy `.env.example` to `.env`, set `DATABASE_URL`, then `npm run migrate`. Same 
 
 ## The commands
 
-<!-- TODO(author): a table of the slash commands in .claude/commands and what each one does. -->
+Every read takes `--json`. Names match without case and by partial text, client code or ID prefix; an ambiguous name lists the candidates and exits 1. Full syntax is in [CLAUDE.md](CLAUDE.md).
 
 | Command | What it does |
 |---|---|
-| `/...` | ... |
+| `/attention` | The Monday list: overdue client requests, unsigned documents, stuck reviews, unfiled email, jobs due, missing engagement letters and identity checks, records past retention. |
+| `/clients` | The client list with partner, manager, identity check and hold. |
+| `/client` | One client: jobs, open requests, engagement terms, recent documents and activity. |
+| `/staff` | Partners, managers, accountants and administrators. |
+| `/categories` | Document categories and the retention each one carries. |
+| `/job-types` | Job types, the service each one falls under, and the documents each must hold. |
+| `/jobs` | Open jobs with state, due date, manager, open requests and missing documents. |
+| `/job` | One job: checklist, documents, requests and signatures. |
+| `/checklist` | For one job, which required documents are final, filed but not final, or missing. |
+| `/wip` | Work in progress by state, with overdue counts. |
+| `/due` | Open jobs due within the practice window, soonest first. |
+| `/manager-load` | Open jobs, overdue jobs, jobs waiting on clients and reviews by manager. |
+| `/documents` | The fifty most recently filed documents. |
+| `/find` | Search titles, file paths, client names and senders. |
+| `/unfiled` | Inbox items not yet filed to a client. |
+| `/review-queue` | Documents waiting for partner or manager review, oldest first. |
+| `/signatures` | Documents out for client signature and not yet signed. |
+| `/awaiting-client` | Everything the practice has asked clients for and not received. |
+| `/chase-list` | Overdue requests due a chaser today, with the client email. |
+| `/engagements` | Current engagement terms by client and service with review dates. |
+| `/engagements-due` | Engagement terms due for review in 30 days, and open jobs with no signed terms. |
+| `/aml` | Identity verification status by client and risk rating. |
+| `/retention` | Final documents past their retention date with no hold: candidates for disposal. |
+| `/holds` | Clients and documents on hold, and why. |
+| `/duplicates` | The same file filed more than once (matching fingerprint). |
+| `/client-years` | Documents held per client per year, by category: the gaps show. |
+| `/templates` | Letter and email templates. |
+| `/settings` | The practice rules the commands read (retention years, chase interval, review window). |
+| `/archive` | Inventory of preserved FYI export rows. |
+| `/compliance` | Record checks against the cited rules in docs/compliance.md. |
+| `/add` | Add a client, staff member, category, job type, requirement, template, job or client request. |
+| `/file` | File a document (or an email to the inbox) with its path; the file is fingerprinted when the path is reachable. |
+| `/assign` | File an inbox item to a client, job and category (once). |
+| `/submit` | Send a draft for review by a partner or manager. |
+| `/approve` | Approve a document in review (the named reviewer signs off). |
+| `/finalise` | Make a document final; it can no longer change. |
+| `/received` | Mark a client request received against the document that answered it. |
+| `/chase` | Record that a chaser went to the client. |
+| `/waive` | Close a request the job no longer needs, with the reason. |
+| `/send-signature` | Record an approved document going to the client for signature. |
+| `/signed` | Record the date a client signed. |
+| `/engage` | Record signed engagement terms for a service; replaces the previous terms for that service. |
+| `/verify-id` | Record a client identity verification and risk rating. |
+| `/job-state` | Move a job; lodged or complete needs every required document final and signed terms. |
+| `/hold` | Put a client on hold (nothing is disposed of) or release it. |
+| `/dispose` | Record disposal of a document past retention with no hold; a person deletes the file. |
+| `/log` | Append a note of a call or meeting to a client. |
+| `/draft-chase` | Draft one chaser email listing everything a client still owes. |
+| `/draft-letter` | Draft a letter or email from a template (engagement, ready to sign, your own). |
+| `/import` | Import an FYI Bulk Export folder: preview first, then import. |
+| `/export` | Export every table to JSON in a private folder. |
+| `/archive-search` | Search the preserved FYI export rows. |
+| `/weekly-review` | The Monday review: one decision list from attention, due jobs, the chase list, the review queue and compliance. |
+| `/customise` | Add a field or change a practice rule in plain language; writes and applies the migration. |
+| `/new-view` | Add a branded read-only page of your records. |
 
-## Instead of fyi
+## Ten questions, one command each
 
-<!-- TODO(author): how to bring data across from FYI Docs; link docs/replace-fyi.md -->
+Each runs today on the demo data. FYI has search, reports and a jobs board; these are the questions a practice manager asks on a Monday and usually answers by hand.
+
+1. What have we asked clients for that is overdue, and who is due a chaser today? `/chase-list`
+2. Which finished jobs have no signed approval, financial statements or return on file? `/compliance`, then `/checklist`
+3. Which open jobs have no signed engagement terms for that service? `/engagements-due`
+4. Which clients with open work have no identity check recorded? `/aml`
+5. Which documents are past their retention date, and which clients are on hold so nothing goes? `/retention`, `/holds`
+6. Which documents have sat in partner review longer than five days? `/review-queue`
+7. Which returns are out with clients for signature, and for how long? `/signatures`
+8. Which files have we filed twice? `/duplicates`
+9. For each client, which years do we hold, and in which categories? The gaps show. `/client-years`
+10. How many open jobs, overdue jobs and jobs waiting on clients does each manager carry? `/manager-load`
+
+## Your first hour: ten things to ask for
+
+1. What needs my attention this week, grouped by who owns it?
+2. Draft one chaser to Bayview Plumbing listing everything they still owe us.
+3. File the ATO notice of assessment in the inbox to Sarah Mitchell under ATO Correspondence.
+4. What is stopping the Kowhai Orchards accounts from being lodged?
+5. Record that we verified the Chen Family Trust trustees today from their licences and the trust deed.
+6. Draft an engagement letter for the Chen Family Trust's annual compliance.
+7. Which Ironbark Cafe documents can we dispose of, and what does the disposal record look like?
+8. Change our chase interval to five days.
+9. Add a "BAS agent" field to each client and show it on the client record.
+10. Make a page of every job due this month by manager.
+
+## Instead of FYI
+
+Run FYI's Bulk Export (an FYI Admin, with Bulk Export enabled by FYI Support) to OneDrive or AWS with a folder structure that includes the client, year and category. Then preview and import:
+
+```bash
+node scripts/practice.mjs import fyi --dir="FYI - Export/2026-10-01 0915" --structure=group/client/year/category --clients=clients.csv --dry-run
+node scripts/practice.mjs import fyi --dir="FYI - Export/2026-10-01 0915" --structure=group/client/year/category --clients=clients.csv
+```
+
+Every file lands in the register under its client, year and category with a SHA-256 fingerprint, and every exported row is kept in a searchable archive. A second run adds nothing. [The full guide](docs/replace-fyi.md) covers what maps, what FYI does not export (versions, web links, file notes) and the cutover checks.
+
+## Rules and limits
+
+[docs/compliance.md](docs/compliance.md) sets out each check and its source: ATO five-year and Inland Revenue seven-year retention, privacy rules on disposal, APES 305 engagement terms, AUSTRAC and DIA identity duties, and the documents each job must hold. These are record checks, not legal advice. The local version has no user login or role separation: put it on your own Postgres with your own access controls before real client data goes in.
 
 ## Architecture
 

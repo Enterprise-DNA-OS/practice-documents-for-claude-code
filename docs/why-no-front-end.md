@@ -13,7 +13,8 @@ That layer used to be the whole product, because talking to a database was hard.
 
 ## What you give up
 
-- **A visual board.** Stages are a table you ask about, not cards you drag.
+- **A visual board.** Job states are a table you ask about, not cards you drag.
+- **Outlook and Word add-ins.** You file email by saving it to the drive and asking for it to be filed. Enterprise DNA builds an Outlook filing button into a custom version.
 - **A phone app.** It runs where Claude Code runs.
 - **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for businesses that want someone to call.
 

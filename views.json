@@ -1,14 +1,32 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Practice Documents for Claude Code: what needs attention, rendered by npm run view",
+    "title": "Practice week",
+    "subtitle": "Read-only. Fictional data when seeded.",
     "sections": [
-      {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
-      }
+      { "title": "Needs attention", "sql": "select kind,client,detail,owner from v_attention order by kind,client" },
+      { "title": "Jobs due soon", "sql": "select name as job,client,state,due_on,days_to_due,manager,requests_open,missing from v_jobs where open and due_on<=current_date+setting('job_due_days')::integer order by due_on" },
+      { "title": "Waiting on clients", "sql": "select client,item,job,due_on,days_overdue,chases,last_chased_on from v_requests where status='open' order by due_on" },
+      { "title": "Out for signature", "sql": "select client,title,signer,sent_on,days_out from v_signatures where signed_on is null order by sent_on" }
+    ]
+  },
+  {
+    "name": "jobs",
+    "title": "Work in progress",
+    "sections": [
+      { "title": "Open jobs by state", "sql": "select state,name as job,client,due_on,days_to_due,manager,missing from v_jobs where open order by array_position(array['planned','in_progress','awaiting_client','review','signing'],state),due_on" },
+      { "title": "Review queue", "sql": "select reviewer,client,title,submitted_on,current_date-submitted_on as days_waiting from v_documents where status='review' order by submitted_on" },
+      { "title": "Finished jobs missing a required document", "sql": "select j.name as job,j.client,k.category from v_jobs j join v_checklist k on k.job_id=j.id where not j.open and k.final=0 order by j.name" }
+    ]
+  },
+  {
+    "name": "records",
+    "title": "Records, retention and risk",
+    "sections": [
+      { "title": "Past retention and not on hold", "sql": "select client,country,category,title,retain_until,days_past from v_retention order by retain_until" },
+      { "title": "On hold", "sql": "select name as client,hold_reason as reason from clients where hold order by name" },
+      { "title": "Inbox not filed", "sql": "select title,email_from as sender,filed_on from v_documents where client_id is null and status<>'disposed' order by filed_on" },
+      { "title": "Identity and engagement", "sql": "select name as client,aml_risk,id_verified_on,(select string_agg(service||' to '||review_on,', ') from engagements e where e.client_id=c.id and not e.superseded) as engagement_terms from clients c where active order by id_verified_on nulls first" }
     ]
   }
 ]
